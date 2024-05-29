@@ -19,10 +19,11 @@ mpirun -np <num_processes> ./matrix_multiply <n>
 ```
 
 Paras:
-- <m>: Matrix size (default: 128)
-- <n>: Bitstring length
-- <size>: Max element size (default: 1024)
-- <output_file>: Output file name (default: output.txt)
+- `m`: Matrix size (default: 128)
+- `n`: Bitstring length
+- `size`: Max element size (default: 1024)
+- `output_file`: Output file name (default: output.txt)
+- `num_processes`: Number of processes
 
 If you want to change the values of m, size, and output_file, you can do so in the source code.
 
