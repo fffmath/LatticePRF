@@ -1,16 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h> // Add this line for va_start and va_end
+#include <stdarg.h>
 #include <mpi.h>
 #include "cblas.h"
 #include <sys/time.h>
 
 #define SEED 42
-
-// Define log level
 #define LOG_LEVEL_DEBUG 1
-
-// Log file name
 #define LOG_FILE "log.txt"
 
 // Log function
@@ -28,8 +24,18 @@ void log_debug(const char *format, ...) {
 // Generate a random matrix of size m x m with elements not exceeding size
 void generate_random_matrix(double *matrix, int m, int size) {
     for (int i = 0; i < m * m; i++) {
-        matrix[i] = (double)(rand() % size);
+        matrix[i] = (double)((rand() % (2 * size + 1)) - size);
     }
+
+    #if LOG_LEVEL_DEBUG
+    log_debug("Generated matrix:\n");
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < m; j++) {
+            log_debug("%lf ", matrix[i * m + j]);
+        }
+        log_debug("\n");
+    }
+    #endif
 }
 
 // Generate a random bitstring of length n
@@ -46,40 +52,53 @@ void generate_random_bitstring(int *bitstring, int n) {
     #endif
 }
 
-// Perform matrix multiplication based on the bitstring
-void multiply_matrices(int *bitstring, double *A0, double *A1, int m, int n, double *result) {
-    double *temp_result = (double *)malloc(sizeof(double) * m * m);
+// Recursive function to perform matrix multiplication based on the bitstring
+void multiply_matrices_recursive(int *bitstring, double **matrices, int start, int end, int m, double *result) {
+    if (start == end) {
+        // Base case: if start and end indices are the same, just copy the matrix
+    double *matrix = matrices[bitstring[start]];
+    for (int i = 0; i < m * m; i++) {
+        result[i] = matrix[i];
+    }
+    } else {
+        // Recursive case: split the range into two halves and apply matrix multiplication recursively
+        int mid = (start + end) / 2;
+        double *temp_result = (double *)malloc(sizeof(double) * m * m);
+
+        // Left half multiplication
+        multiply_matrices_recursive(bitstring, matrices, start, mid, m, result);
+        // Right half multiplication
+        multiply_matrices_recursive(bitstring, matrices, mid + 1, end, m, temp_result);
+
+        // Multiply the results of left and right halves and add to the result
+        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, m, m, 1.0, temp_result, m, result, m, 1.0, result, m);
+
+        free(temp_result);
+    }
+}
+
+// Wrapper function to initialize and call recursive multiplication
+void multiply_matrices(int *bitstring, double **matrices, int n, int m, double *result) {
     // Initialize result matrix with identity matrix
     for (int i = 0; i < m * m; i++) {
         result[i] = 0.0;
     }
-    for (int i = 0; i < n; i++) {
-        double *matrix;
-        if (bitstring[i] == 0) {
-            matrix = A0;
-        } else {
-            matrix = A1;
-        }
-        // Perform matrix multiplication
-        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, m, m, 1.0, matrix, m, result, m, 1.0, temp_result, m);
-        // Copy result back to result matrix
-        for (int j = 0; j < m * m; j++) {
-            result[j] = temp_result[j];
-        }
-    }
-    free(temp_result);
+    // Call recursive multiplication function
+    multiply_matrices_recursive(bitstring, matrices, 0, n - 1, m, result);
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 5) {
-        printf("Usage: %s <m> <n> <size> <output_file>\n", argv[0]);
-        exit(1);
+    int m = 128; // Default value for matrix size
+    int size = 8; // Default maximum element size
+    char *output_file = "output.txt"; // Default output file name
+
+    // Check if the number of arguments is less than 2
+    if (argc < 2) {
+        printf("Usage: %s <n>\n", argv[0]); // Print usage message
+        exit(1); // Exit the program with error status
     }
 
-    int m = atoi(argv[1]); // Matrix size
-    int n = atoi(argv[2]); // Bitstring length
-    int size = atoi(argv[3]); // Max element size
-    char *output_file = argv[4]; // Output file name
+    int n = atoi(argv[1]); // Bitstring length from the first argument
 
     // Initialize MPI
     MPI_Init(NULL, NULL);
@@ -107,7 +126,8 @@ int main(int argc, char *argv[]) {
 
     // Perform matrix multiplication based on the bitstring
     double start_time = MPI_Wtime();
-    multiply_matrices(bitstring, A0, A1, m, n, result);
+    double *matrices[] = {A0, A1}; // Array of matrices
+    multiply_matrices(bitstring, matrices, n, m, result);
     double end_time = MPI_Wtime();
 
     // Write the result matrix to output file
