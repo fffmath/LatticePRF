@@ -1,0 +1,4 @@
+Generated bitstring: Generated bitstring: Generated bitstring: 1 Generated bitstring: 0 0 0 1 1 1 0 1 0 1 0 0 0 0 0 1 0 0 1 0 1 0 1 0 1 0 0 1 1 1 
+
+0 
+
