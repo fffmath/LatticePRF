@@ -1,3 +1,35 @@
-# lattice-based-prf
+# Lattice Based PRF
 
-执行 make 命令来编译代码。最后，你可以运行 "Usage: %s <m> <n> <size> <output_file>\n"来运行程序，其中 <m> 是矩阵的大小， <n> 是比特串的长度， <size> 是矩阵元素的最大值, <output_file> 是输出的结果
+This program performs matrix multiplication based on a randomly generated bitstring using MPI for parallelization.
+
+## Compilation
+
+To compile the program, use the following command:
+
+```bash
+make
+```
+
+## Usage
+
+To execute the program, run:
+
+```bash
+mpirun -np <num_processes> ./matrix_multiply <n>
+```
+
+Paras:
+- <m>: Matrix size (default: 128)
+- <n>: Bitstring length
+- <size>: Max element size (default: 1024)
+- <output_file>: Output file name (default: output.txt)
+
+If you want to change the values of m, size, and output_file, you can do so in the source code.
+
+### Author
+
+You can find more information on [my personal website](https://www.fffmath.com/).
+
+### License
+
+This script is released under the MIT License 2.0. See the [LICENSE](LICENSE) file for details.
